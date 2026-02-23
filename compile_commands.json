@@ -1,0 +1,8 @@
+[
+{
+    "directory": "/home/reed/my_projects/header_expansion",
+    "command": "clang++ --gcc-toolchain=/usr -resource-dir=/opt/llvm-tooling/lib/clang/22 -g -std=gnu++23 -o test.o -c /home/reed/my_projects/header_expansion/test.cpp",
+    "file": "/home/reed/my_projects/header_expansion/test.cpp",
+    "output": "test.o"
+}
+]
