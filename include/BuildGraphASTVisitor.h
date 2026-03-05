@@ -42,6 +42,11 @@ private:
 
     clang::Decl* getRemoveRefPtrArrTypeDecl(clang::QualType);
 
+    void handleNonTypeTemplateParmDecl(clang::NonTypeTemplateParmDecl* NTTP);
+    void handleVarDecl(clang::VarDecl* VD);
+    void handleTypedefNameDecl(clang::TypedefNameDecl* TND);
+    void handleTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* TATD);
+
     clang::ASTContext* context;
     std::vector<clang::Decl*> decl_list;
     std::unordered_map<clang::Decl*, std::unordered_set<clang::Decl*>> graph;

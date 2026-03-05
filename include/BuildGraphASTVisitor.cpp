@@ -90,6 +90,7 @@ clang::QualType getRemoveRefPtrArrType(clang::QualType QT) {
         }
     }
 }
+
 bool Self::VisitDecl(clang::Decl* D) {
     if (D->getBeginLoc().isValid()) {
         llvm::errs() << std::format("Decl kind:{}, loc: {},{}\n",
@@ -105,55 +106,14 @@ bool Self::VisitDecl(clang::Decl* D) {
 
     auto* CanonicalDecl = D->getCanonicalDecl();
 
-    if (clang::isa<clang::VarDecl, clang::NonTypeTemplateParmDecl>(D)) {
-
-        clang::QualType QT = [&] {
-            if (auto* var_decl = clang::dyn_cast<clang::VarDecl>(D)) {
-                // llvm::errs() << std::format("decl: {}, type: {}\n", var_decl->getName().data(), var_decl->getType()->getTypeClassName());
-                return var_decl->getType();
-            }
-            if (auto* NTTP_decl = clang::dyn_cast<clang::NonTypeTemplateParmDecl>(D)) {
-                // llvm::errs() << std::format("decl: {}, type: {}\n", NTTP_decl->getName().data(), NTTP_decl->getType()->getTypeClassName());
-                return NTTP_decl->getType();
-            }
-            assert(false);
-        }();
-
-
-        QT = getRemoveRefPtrArrType(QT);
-
-        auto QTC = QT.getCanonicalType();
-        auto* T = QT.getTypePtr();
-
-        if (auto* TST = clang::dyn_cast<clang::TemplateSpecializationType>(T)) {
-            for (const auto& arg : TST->template_arguments()) {
-                if (arg.getKind() != clang::TemplateArgument::Type) continue;
-                auto type = getRemoveRefPtrArrType(arg.getAsType());
-                auto decl = type->getAsTagDecl();
-                if (!decl) continue;
-                graph[CanonicalDecl].insert(decl->getCanonicalDecl());
-            }
-
-            auto TN = TST->getTemplateName();
-            if (auto* TD = TN.getAsTemplateDecl()) {
-                graph[CanonicalDecl].insert(TD->getCanonicalDecl());
-            }
-        } else if (auto* TDT = clang::dyn_cast<clang::TypedefType>(T)) {
-            if (auto* TND = getRemoveRefPtrArrTypeDecl(QT)) {
-                graph[CanonicalDecl].insert(TND->getCanonicalDecl());
-            }
-        } else if (auto* RT = QTC->getAs<clang::RecordType>()) {
-            if (auto* RD = RT->getDecl()) {
-                graph[CanonicalDecl].insert(RD->getCanonicalDecl());
-            }
-        }
+    if (auto* NTTP = clang::dyn_cast<clang::NonTypeTemplateParmDecl>(D)) {
+        handleNonTypeTemplateParmDecl(NTTP);
+    } else if (auto* VD = clang::dyn_cast<clang::VarDecl>(D)) {
+        handleVarDecl(VD);
     } else if (auto* TND = clang::dyn_cast<clang::TypedefNameDecl>(D)) {
-        auto QT = TND->getUnderlyingType();
-
-        if (auto* UnderlyingDecl = getRemoveRefPtrArrTypeDecl(QT)) {
-            graph[CanonicalDecl].insert(UnderlyingDecl->getCanonicalDecl());
-        }
-    } else if (auto alias_template_decl = clang::dyn_cast<clang::TypeAliasTemplateDecl>(D)) {
+        handleTypedefNameDecl(TND);
+    } else if (auto* TATD = clang::dyn_cast<clang::TypeAliasTemplateDecl>(D)) {
+        handleTypeAliasTemplateDecl(TATD);
     } else if (auto* PrimaryTemplateDecl = getPrimaryTemplate(D)) {
         graph[CanonicalDecl].insert(PrimaryTemplateDecl->getCanonicalDecl());
         graph[PrimaryTemplateDecl->getCanonicalDecl()].insert(CanonicalDecl);
@@ -212,4 +172,112 @@ clang::Decl* Self::getParentDecl(clang::Decl* D) const {
         }
     }
     return result;
+}
+
+void Self::handleNonTypeTemplateParmDecl(clang::NonTypeTemplateParmDecl* NTTP) {
+    const auto CanonicalDecl = NTTP->getCanonicalDecl();
+
+    clang::QualType QT = NTTP->getType();
+
+    QT = getRemoveRefPtrArrType(QT);
+
+    auto* T = QT.getTypePtr();
+
+    if (auto* TST = clang::dyn_cast<clang::TemplateSpecializationType>(T)) {
+        for (const auto& arg : TST->template_arguments()) {
+            if (arg.getKind() != clang::TemplateArgument::Type) continue;
+            const auto type = getRemoveRefPtrArrType(arg.getAsType());
+            const auto decl = type->getAsTagDecl();
+            if (!decl) continue;
+            graph[CanonicalDecl].insert(decl->getCanonicalDecl());
+        }
+
+        const auto TN = TST->getTemplateName();
+        if (auto* TD = TN.getAsTemplateDecl()) {
+            graph[CanonicalDecl].insert(TD->getCanonicalDecl());
+        }
+    } else if (auto* TDT = clang::dyn_cast<clang::TypedefType>(T)) {
+        if (auto* TND = getRemoveRefPtrArrTypeDecl(QT)) {
+            graph[CanonicalDecl].insert(TND->getCanonicalDecl());
+        }
+    } else if (auto* RT = clang::dyn_cast<clang::RecordType>(T)) {
+        if (auto* RD = RT->getDecl()) {
+            graph[CanonicalDecl].insert(RD->getCanonicalDecl());
+        }
+    }
+}
+
+void Self::handleVarDecl(clang::VarDecl *VD) {
+    const auto CanonicalDecl = VD->getCanonicalDecl();
+
+    clang::QualType QT = VD->getType();
+
+    QT = getRemoveRefPtrArrType(QT);
+
+    auto* T = QT.getTypePtr();
+
+    if (auto* TST = clang::dyn_cast<clang::TemplateSpecializationType>(T)) {
+        for (const auto& arg : TST->template_arguments()) {
+            if (arg.getKind() != clang::TemplateArgument::Type) continue;
+            const auto type = getRemoveRefPtrArrType(arg.getAsType());
+            const auto decl = type->getAsTagDecl();
+            if (!decl) continue;
+            graph[CanonicalDecl].insert(decl->getCanonicalDecl());
+        }
+
+        const auto TN = TST->getTemplateName();
+        if (auto* TD = TN.getAsTemplateDecl()) {
+            graph[CanonicalDecl].insert(TD->getCanonicalDecl());
+        }
+    } else if (auto* TDT = clang::dyn_cast<clang::TypedefType>(T)) {
+        if (auto* TND = getRemoveRefPtrArrTypeDecl(QT)) {
+            graph[CanonicalDecl].insert(TND->getCanonicalDecl());
+        }
+    } else if (auto* RT = clang::dyn_cast<clang::RecordType>(T)) {
+        if (auto* RD = RT->getDecl()) {
+            graph[CanonicalDecl].insert(RD->getCanonicalDecl());
+        }
+    }
+}
+
+void Self::handleTypedefNameDecl(clang::TypedefNameDecl *TND) {
+    const auto CanonicalDecl = TND->getCanonicalDecl();
+
+    const auto QT = TND->getUnderlyingType();
+
+    if (auto* UnderlyingDecl = getRemoveRefPtrArrTypeDecl(QT)) {
+        graph[CanonicalDecl].insert(UnderlyingDecl->getCanonicalDecl());
+    }
+}
+
+void Self::handleTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl *TATD) {
+    auto* D = TATD->getTemplatedDecl();
+
+    clang::QualType QT = D->getUnderlyingType();
+    const clang::Type* T = QT.getTypePtr();
+    if (auto* DNT = clang::dyn_cast<clang::DependentNameType>(T)) {
+        llvm::errs() << "Found DependentNameType\n";
+
+        if (auto* II = DNT->getIdentifier()) {
+            llvm::errs() << "member name: "
+                         << II->getName() << "\n";
+        }
+
+        auto qualifier = DNT->getQualifier();
+
+        const auto* NNS = &qualifier;
+
+        while (NNS) {
+            if (auto* T = NNS->getAsType()) {
+                auto QT = clang::QualType(T, 0);
+
+                if (auto* TST = QT->getAs<clang::TemplateSpecializationType>()) {
+                    clang::TemplateName TN = TST->getTemplateName();
+                    if ()
+                }
+            }
+        }
+
+        auto qualifier = DNT->getQualifier();
+    }
 }

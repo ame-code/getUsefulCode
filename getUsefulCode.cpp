@@ -10,7 +10,10 @@
 
 namespace fs = std::filesystem;
 
+#include <bit>
+
 int main(int argc, char** argv) {
+    std::bit_width(10u);
     assert(argc > 1 && "need args");
     assert(fs::exists(argv[1]) && "File not exist");
     
