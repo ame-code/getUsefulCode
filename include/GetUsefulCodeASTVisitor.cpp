@@ -6,6 +6,8 @@
 
 #include "GetUsefulCodeASTVisitor.h"
 
+#include <filesystem>
+
 using Self = GetUsefulCodeASTVisitor;
 using Base = clang::RecursiveASTVisitor<Self>;
 
@@ -36,12 +38,15 @@ bool Self::VisitDecl(clang::Decl* D) {
 
             auto& Ctx = D->getASTContext();
             auto& SM = Ctx.getSourceManager();
-            auto FID = SM.getFileID(D->getLocation());
-            auto OptionalFileEntry = SM.getFileEntryRefForID(FID);
-            if (!OptionalFileEntry) return true;
-            auto FileEntry = *OptionalFileEntry;
+            auto loc = D->getLocation();
+            if (loc.isMacroID()) {
+                loc = SM.getExpansionLoc(loc);
+            }
+            auto FID = SM.getFileID(loc);
+            auto FileEntryPtr = SM.getFileEntryForID(FID);
+            if (!FileEntryPtr) { return true; }
 
-            valid_codes.emplace_back(FileEntry.getUniqueID(), SM.getFileOffset(D->getLocation()), Code.value().append(";\n"));
+            valid_codes.emplace_back(FileEntryPtr->getUniqueID(), SM.getFileOffset(loc), Code.value().append(";\n"));
         }
     }
 
@@ -55,14 +60,19 @@ std::optional<std::string> Self::getSourceCodeFromDecl(const clang::Decl* D) {
     auto& SM = Ctx.getSourceManager();
     auto& LangOpts = Ctx.getLangOpts();
 
-    auto Begin = D->getBeginLoc(), End = D->getEndLoc();
-    if (Begin.isInvalid() || End.isInvalid()) return std::nullopt;
-    Begin = SM.getSpellingLoc(Begin), End = SM.getSpellingLoc(End);
-    if (Begin.isInvalid() || End.isInvalid()) return std::nullopt;
+    auto range = D->getSourceRange();
 
-    auto CharSourceRange = clang::CharSourceRange::getTokenRange(Begin, End);
+    auto begin = SM.getExpansionLoc(range.getBegin());
+    auto end = SM.getExpansionLoc(range.getEnd());
 
-    auto CodeRef = clang::Lexer::getSourceText(CharSourceRange, SM, LangOpts);
-    if (CodeRef.empty()) return std::nullopt;
+    auto char_range = clang::CharSourceRange::getTokenRange(begin, end);
+
+    bool invalid = false;
+
+    auto CodeRef = clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(range.getBegin(), range.getEnd()), SM, LangOpts, &invalid);
+
+    if (invalid) {
+        return std::nullopt;
+    }
     return CodeRef.str();
 }

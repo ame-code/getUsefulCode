@@ -92,17 +92,17 @@ clang::QualType getRemoveRefPtrArrType(clang::QualType QT) {
 }
 
 bool Self::VisitDecl(clang::Decl* D) {
-    if (D->getBeginLoc().isValid()) {
-        llvm::errs() << std::format("Decl kind:{}, loc: {},{}\n",
-            D->getDeclKindName(),
-            context->getSourceManager().getLineNumber(D->getBeginLoc()),
-            context->getSourceManager().getColumnNumber(D->getBeginLoc())
-        );
-    } else {
-        llvm::errs() << std::format("Decl kind:{}, loc: error\n",
-            D->getDeclKindName()
-        );
-    }
+    // if (D->getBeginLoc().isValid()) {
+    //     llvm::errs() << std::format("Decl kind:{}, loc: {},{}\n",
+    //         D->getDeclKindName(),
+    //         context->getSourceManager().getLineNumber(D->getBeginLoc()),
+    //         context->getSourceManager().getColumnNumber(D->getBeginLoc())
+    //     );
+    // } else {
+    //     llvm::errs() << std::format("Decl kind:{}, loc: error\n",
+    //         D->getDeclKindName()
+    //     );
+    // }
 
     auto* CanonicalDecl = D->getCanonicalDecl();
 
@@ -133,17 +133,17 @@ bool Self::VisitDecl(clang::Decl* D) {
 }
 
 bool Self::VisitStmt(clang::Stmt* S) {
-    if (S->getBeginLoc().isValid()) {
-        llvm::errs() << std::format("Stmt kind:{}, loc: {},{}\n",
-            S->getStmtClassName(),
-            context->getSourceManager().getLineNumber(S->getBeginLoc()),
-            context->getSourceManager().getColumnNumber(S->getBeginLoc())
-        );
-    } else {
-        llvm::errs() << std::format("Stmt kind:{}, loc: error\n",
-            S->getStmtClassName()
-        );
-    }
+    // if (S->getBeginLoc().isValid()) {
+    //     llvm::errs() << std::format("Stmt kind:{}, loc: {},{}\n",
+    //         S->getStmtClassName(),
+    //         context->getSourceManager().getLineNumber(S->getBeginLoc()),
+    //         context->getSourceManager().getColumnNumber(S->getBeginLoc())
+    //     );
+    // } else {
+    //     llvm::errs() << std::format("Stmt kind:{}, loc: error\n",
+    //         S->getStmtClassName()
+    //     );
+    // }
 
     auto* RefedDecl = getReferencedDecl(S);
     if (!RefedDecl) return true;
@@ -251,33 +251,30 @@ void Self::handleTypedefNameDecl(clang::TypedefNameDecl *TND) {
 }
 
 void Self::handleTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl *TATD) {
-    auto* D = TATD->getTemplatedDecl();
+    auto CanonicalDecl = TATD->getCanonicalDecl();
+    const auto* D = TATD->getTemplatedDecl();
 
-    clang::QualType QT = D->getUnderlyingType();
-    const clang::Type* T = QT.getTypePtr();
-    if (auto* DNT = clang::dyn_cast<clang::DependentNameType>(T)) {
-        llvm::errs() << "Found DependentNameType\n";
+    if (auto* DNT = clang::dyn_cast<clang::DependentNameType>(D->getUnderlyingType().getTypePtr())) {
+        // llvm::errs() << "Found DependentNameType\n";
 
-        if (auto* II = DNT->getIdentifier()) {
-            llvm::errs() << "member name: "
-                         << II->getName() << "\n";
-        }
+        // if (auto* II = DNT->getIdentifier()) {
+        //     llvm::errs() << "member name: "
+        //                  << II->getName() << "\n";
+        // }
 
         auto qualifier = DNT->getQualifier();
+        auto* NNS = &qualifier;
 
-        const auto* NNS = &qualifier;
+        if (const auto* T = NNS->getAsType()) {
+            if (const auto* TST = T->getAs<clang::TemplateSpecializationType>()) {
+                clang::TemplateName TN = TST->getTemplateName();
+                clang::TemplateDecl* TD = TN.getAsTemplateDecl();
+                if (TD) {
+                    // llvm::errs() << "Found TemplateDecl " << TD->getNameAsString() << '\n';
 
-        while (NNS) {
-            if (auto* T = NNS->getAsType()) {
-                auto QT = clang::QualType(T, 0);
-
-                if (auto* TST = QT->getAs<clang::TemplateSpecializationType>()) {
-                    clang::TemplateName TN = TST->getTemplateName();
-                    if ()
+                    graph[CanonicalDecl].insert(TD->getCanonicalDecl());
                 }
             }
         }
-
-        auto qualifier = DNT->getQualifier();
     }
 }
