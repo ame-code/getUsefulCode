@@ -37,15 +37,8 @@ public:
         clang::SrcMgr::CharacteristicKind FileType
     ) override;
 
-    // void FileChanged(
-    //     clang::SourceLocation Loc,
-    //     clang::PPCallbacks::FileChangeReason Reason,
-    //     clang::SrcMgr::CharacteristicKind FileType,
-    //     clang::FileID PrevFID = clang::FileID()
-    // ) override;
-
 private:
-    std::optional<std::string> getSourceCodeFromSourceLocation(clang::SourceLocation);
+    std::optional<std::string> getSourceCodeFromSourceLocation(clang::SourceLocation) const;
 
-    bool isRealFile(clang::FileID);
+    bool isRealFile(clang::FileID) const;
 };

@@ -56,7 +56,7 @@ void Self::InclusionDirective(
     }
 }
 
-std::optional<std::string> Self::getSourceCodeFromSourceLocation(clang::SourceLocation Start) {
+std::optional<std::string> Self::getSourceCodeFromSourceLocation(const clang::SourceLocation Start) const {
     if (Start.isInvalid() || !Start.isFileID()) return std::nullopt;
 
     unsigned LineNo = SM.getSpellingLineNumber(Start);
@@ -93,6 +93,6 @@ std::optional<std::string> Self::getSourceCodeFromSourceLocation(clang::SourceLo
     return Result;
 }
 
-bool Self::isRealFile(clang::FileID FID) {
+bool Self::isRealFile(const clang::FileID FID) const {
     return SM.getFileEntryForID(FID) != nullptr;
 }
