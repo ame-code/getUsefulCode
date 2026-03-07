@@ -1,13 +1,10 @@
-#define MAIN int main() {}
+template <class T>
+struct Foo {};
 
-namespace aaa {
-    int bbb = 1;
-    namespace ccc {
-        int ddd = 2;
-    };
-};
+using i32 = int;
+
+struct Bar {};
 
 int main() {
-    aaa::bbb = 2;
-    // aaa::ccc::ddd = 3;
+    Foo<i32> foo;
 }
