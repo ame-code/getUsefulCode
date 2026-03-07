@@ -3,6 +3,8 @@
 
 #include "RecordPPCallbacks.h"
 
+#include <clang/Lex/MacroInfo.h>
+
 using Self = RecordPPCallbacks;
 
 void Self::MacroDefined(const clang::Token& MacroNameTok, const clang::MacroDirective* MD) {
@@ -54,6 +56,18 @@ void Self::InclusionDirective(
     if (auto Code = getSourceCodeFromSourceLocation(HashLoc)) {
         codes.emplace_back(OriginalFileEntry.getUniqueID(), SM.getFileOffset(HashLoc), *Code);
     }
+}
+
+void Self::MacroUndefined(const clang::Token &MacroNameTok, const clang::MacroDefinition &MD, const clang::MacroDirective *Undef) {
+    auto Loc = MacroNameTok.getLocation();
+    if (Loc.isInvalid() || SM.isInSystemHeader(Loc)) return;
+
+    clang::FileID FID = SM.getFileID(Loc);
+    auto OptionalFileEntryRef = SM.getFileEntryRefForID(FID);
+    if (!OptionalFileEntryRef) return;
+    auto FileEntryRef = *OptionalFileEntryRef;
+
+    codes.emplace_back(FileEntryRef.getUniqueID(), SM.getFileOffset(Loc), std::format("#undef {}\n", MacroNameTok.getIdentifierInfo()->getName().str()));
 }
 
 std::optional<std::string> Self::getSourceCodeFromSourceLocation(const clang::SourceLocation Start) const {

@@ -22,7 +22,7 @@ public:
     RecordPPCallbacks(clang::SourceManager& SM, const clang::LangOptions& LangOpts, std::vector<CodeInfo>& codes, std::vector<Edge>& edges): SM(SM), LangOpts(LangOpts), codes(codes), edges(edges) {}
 
     void MacroDefined(const clang::Token& MacroNameTok, const clang::MacroDirective* MD) override;
-
+    void MacroUndefined(const clang::Token &MacroNameTok, const clang::MacroDefinition &MD, const clang::MacroDirective *Undef) override;
     void InclusionDirective(
         clang::SourceLocation HashLoc,
         const clang::Token &IncludeTok,
