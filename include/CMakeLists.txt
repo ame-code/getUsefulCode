@@ -103,5 +103,3 @@ target_link_libraries(MyCompilationDataBase PRIVATE
     clang-cpp
     LLVM
 )
-
-add_subdirectory(ValidCodeVisitor)
