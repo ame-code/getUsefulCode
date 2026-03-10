@@ -55,5 +55,5 @@ private:
     static std::optional<llvm::sys::fs::UniqueID> tryGetUniqueID(const clang::Decl* D);
     unsigned getFileOffset(const clang::Decl* D) const;
 
-    std::optional<std::string> getSourceCodeFromDecl(const clang::Decl*);
+    std::optional<std::string> getSourceCodeFromDecl(const clang::Decl*) const;
 };
