@@ -1,13 +1,16 @@
-template <class T>
-struct Foo {};
+#include <format>
 
-using i32 = int;
+struct Foo {
+    int n;
+};
 
-struct Bar {};
-
-#define MAIN
-#undef MAIN
+template <>
+struct std::formatter<Foo> : std::formatter<int> {
+    auto format(Foo foo, std::format_context& ctx) const {
+        return std::formatter<int>::format(foo.n, ctx);
+    }
+};
 
 int main() {
-    Foo<i32> foo;
+    auto a = std::format("{}", Foo(1));
 }

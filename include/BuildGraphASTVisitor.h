@@ -19,6 +19,7 @@ public:
     bool shouldVisitImplicitCode() const;
     bool VisitDecl(clang::Decl*);
     bool VisitStmt(clang::Stmt*);
+    bool VisitCallExpr(clang::CallExpr*);
 
     auto& getGraph() & {
         return graph;
@@ -35,19 +36,31 @@ public:
     const auto&& getGraph() const && {
         return std::move(graph);
     }
+
+    void buildFormatterCacheInTranslationUnit();
+
 private:
     clang::Decl* getLastDecl() const;
 
     clang::Decl* getParentDecl(clang::Decl* D) const;
 
-    clang::Decl* getRemoveRefPtrArrTypeDecl(clang::QualType);
+    static clang::Decl* getRemoveRefPtrArrTypeDecl(clang::QualType);
+    static clang::QualType getRemoveRefPtrArrType(clang::QualType QT);
+
+    static bool isInStdNamespace(const clang::Decl* D);
+
+    static clang::Decl* getDeclFromQualType(clang::QualType QT);
+
+    void BuildFormatterCacheInStdNamespace(const clang::NamespaceDecl* NS);
 
     void handleNonTypeTemplateParmDecl(clang::NonTypeTemplateParmDecl* NTTP);
     void handleVarDecl(clang::VarDecl* VD);
     void handleTypedefNameDecl(clang::TypedefNameDecl* TND);
     void handleTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* TATD);
+    void handleMaterializeTemporaryExpr(clang::MaterializeTemporaryExpr* MTE);
 
     clang::ASTContext* context;
     std::vector<clang::Decl*> decl_list;
     std::unordered_map<clang::Decl*, std::unordered_set<clang::Decl*>> graph;
+    std::unordered_map<const clang::Type*, clang::ClassTemplateSpecializationDecl*> formatterCache;
 };

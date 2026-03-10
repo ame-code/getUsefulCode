@@ -13,6 +13,7 @@ using Base = clang::ASTConsumer;
 void Self::HandleTranslationUnit(clang::ASTContext& Context) {
     const auto TUDecl = Context.getTranslationUnitDecl();
 
+    graph_visitor.buildFormatterCacheInTranslationUnit();
     graph_visitor.TraverseDecl(TUDecl);
 
     const auto DependenceGraph = std::move(graph_visitor).getGraph();

@@ -27,3 +27,5 @@ clang::FunctionTemplateDecl* getPrimaryTemplateFromFunction(clang::Decl* D);
 clang::Decl* getPrimaryTemplate(clang::Decl* D);
 
 clang::Decl* getReferencedDecl(clang::Stmt* S);
+
+#define log(...) llvm::errs() << std::format(__VA_ARGS__) << '\n';
