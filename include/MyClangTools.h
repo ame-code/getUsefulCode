@@ -28,4 +28,4 @@ clang::Decl* getPrimaryTemplate(clang::Decl* D);
 
 clang::Decl* getReferencedDecl(clang::Stmt* S);
 
-#define log(...) llvm::errs() << std::format(__VA_ARGS__) << '\n';
+#define log(...) llvm::errs() << "[log] " << std::format(__VA_ARGS__) << '\n';

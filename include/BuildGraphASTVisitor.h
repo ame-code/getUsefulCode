@@ -37,7 +37,7 @@ public:
         return std::move(graph);
     }
 
-    void buildFormatterCacheInTranslationUnit();
+    clang::ClassTemplateDecl* formatter_main_template = nullptr;
 
 private:
     clang::Decl* getLastDecl() const;
@@ -51,8 +51,6 @@ private:
 
     static clang::Decl* getDeclFromQualType(clang::QualType QT);
 
-    void BuildFormatterCacheInStdNamespace(const clang::NamespaceDecl* NS);
-
     void handleNonTypeTemplateParmDecl(clang::NonTypeTemplateParmDecl* NTTP);
     void handleVarDecl(clang::VarDecl* VD);
     void handleTypedefNameDecl(clang::TypedefNameDecl* TND);
@@ -62,5 +60,4 @@ private:
     clang::ASTContext* context;
     std::vector<clang::Decl*> decl_list;
     std::unordered_map<clang::Decl*, std::unordered_set<clang::Decl*>> graph;
-    std::unordered_map<const clang::Type*, clang::ClassTemplateSpecializationDecl*> formatterCache;
 };

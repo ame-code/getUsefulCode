@@ -25,5 +25,7 @@ public:
     void HandleTranslationUnit(clang::ASTContext&) override;
     
 private:
+    clang::ClassTemplateDecl* findFormatterTemplate(clang::ASTContext& context);
+
     static std::unordered_set<clang::Decl*> markValidDecl(const std::unordered_map<clang::Decl*, std::unordered_set<clang::Decl*>>&, clang::FunctionDecl*);
 };

@@ -26,8 +26,4 @@ int main(int argc, char** argv) {
     auto result = Tool.run(&Factory);
     std::cout << code << '\n';
     return result;
-
-    clang::MaterializeTemporaryExpr;
-    clang::CXXFunctionalCastExpr;
-    clang::CXXParenListInitExpr;
 }

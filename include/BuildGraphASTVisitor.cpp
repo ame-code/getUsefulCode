@@ -8,49 +8,7 @@
 using Self = BuildGraphASTVisitor;
 using Base = clang::RecursiveASTVisitor<Self>;
 
-Self::BuildGraphASTVisitor(clang::ASTContext* context) : context(context), decl_list(), formatterCache() {
-}
-
-void Self::buildFormatterCacheInTranslationUnit() {
-    clang::TranslationUnitDecl* TU = context->getTranslationUnitDecl();
-    if (!TU) return;
-
-    const clang::SourceManager& SM = context->getSourceManager();
-
-    for (auto* decl : TU->decls()) {
-        if (SM.isInSystemHeader(decl->getLocation())) {
-            continue;
-        }
-
-        if (auto* NS = clang::dyn_cast<clang::NamespaceDecl>(decl); NS && NS->getName() == "std") {
-            BuildFormatterCacheInStdNamespace(NS);
-        } else if (auto* Spec = clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(decl); Spec && Spec->getQualifiedNameAsString() == "std::formatter") {
-            const clang::TemplateArgumentList& args = Spec->getTemplateArgs();
-            if (args.size() == 0 || args[0].getKind() != clang::TemplateArgument::Type) continue;
-
-            const auto& arg = args[0];
-            clang::QualType QT = arg.getAsType();
-            QT = getRemoveRefPtrArrType(QT);
-
-            const clang::Type* T = QT.getTypePtr();
-            formatterCache[T] = Spec;
-        }
-    }
-}
-
-void Self::BuildFormatterCacheInStdNamespace(const clang::NamespaceDecl *NS) {
-    for (auto* decl : NS->decls()) {
-        if (auto* Spec = clang::dyn_cast<clang::ClassTemplateSpecializationDecl>(decl); Spec->getName() == "formatter") {
-            const clang::TemplateArgumentList& args = Spec->getTemplateArgs();
-            if (args.size() != 0 || args[0].getKind() != clang::TemplateArgument::Type) continue;
-
-            const auto& arg = args[0];
-            const clang::Type* T = arg.getAsType().getCanonicalType().getTypePtr();
-            formatterCache[T] = Spec;
-        } else if (const auto* namespace_decl = clang::dyn_cast<clang::NamespaceDecl>(decl); namespace_decl->isInlineNamespace()) {
-            BuildFormatterCacheInStdNamespace(namespace_decl);
-        }
-    }
+Self::BuildGraphASTVisitor(clang::ASTContext* context) : context(context), decl_list() {
 }
 
 bool Self::shouldVisitTemplateInstantiations() const { // NOLINT(*-convert-member-functions-to-static)
@@ -192,7 +150,6 @@ void Self::handleMaterializeTemporaryExpr(clang::MaterializeTemporaryExpr *MTE) 
     graph[getLastDecl()->getCanonicalDecl()].insert(D->getCanonicalDecl());
 }
 
-
 bool Self::VisitCallExpr(clang::CallExpr* Call) {
     const clang::FunctionDecl* Callee = Call->getDirectCallee();
     if (!Callee || !isInStdNamespace(Callee)) return true;
@@ -201,30 +158,47 @@ bool Self::VisitCallExpr(clang::CallExpr* Call) {
 
     if (name != "format" && name != "print" && name != "println") return true;
 
+    if (!formatter_main_template) return true;
+    log("formatter check: {}", formatter_main_template->getQualifiedNameAsString());
+
     const clang::TemplateArgumentList* args = Callee->getTemplateSpecializationArgs();
     if (!args) return true;
 
     for (unsigned i = 0; i < args->size(); i++) {
         const auto& arg = args->get(i);
-        if (arg.getKind() == clang::TemplateArgument::Type) {
-            clang::QualType QT = arg.getAsType();
-            QT = getRemoveRefPtrArrType(QT);
-
-            const clang::Type* T = QT.getTypePtr();
-
-            if (formatterCache.contains(T)) {
-                graph[getLastDecl()->getCanonicalDecl()].insert(formatterCache[T]);
-            }
-        } else if (arg.getKind() == clang::TemplateArgument::Pack) {
+        if (arg.getKind() == clang::TemplateArgument::Pack) {
             for (const auto& pack_arg : arg.pack_elements()) {
-                clang::QualType QT = pack_arg.getAsType();
-                QT = getRemoveRefPtrArrType(QT);
+                clang::QualType QT = pack_arg.getAsType().getNonReferenceType()
+                                                         .getUnqualifiedType()
+                                                         .getCanonicalType();
 
-                const clang::Type* T = QT.getTypePtr();
+                clang::TemplateArgument formatter_arg(QT), char_t(context->CharTy);
 
-                if (formatterCache.contains(T)) {
-                    graph[getLastDecl()->getCanonicalDecl()].insert(formatterCache[T]);
+                std::array arr = {formatter_arg, char_t};
+
+                void* InsertPos = nullptr;
+                auto* Spec = formatter_main_template->findSpecialization(arr, InsertPos);
+                if (!Spec) {
+                    for (auto* S : formatter_main_template->specializations()) {
+                        const auto& Args = S->getTemplateArgs();
+                        if (Args.size() > 0 && Args[0].getKind() == clang::TemplateArgument::Type) {
+                            clang::ASTContext::hasSameType(Args[0].getAsType(), QT);
+                            Spec = S;
+                            break;
+                        }
+                    }
                 }
+
+                if (!Spec) return true;
+
+                clang::NamedDecl* TargetDecl = Spec;
+                auto Specialization = Spec->getSpecializedTemplateOrPartial();
+                if (auto* Partial = Specialization.dyn_cast<clang::ClassTemplatePartialSpecializationDecl*>()) {
+                    TargetDecl = Partial;
+                }
+
+                log("line:{}", __LINE__);
+                graph[getLastDecl()->getCanonicalDecl()].insert(TargetDecl->getCanonicalDecl());
             }
         }
     }
@@ -292,6 +266,11 @@ clang::Decl* Self::getDeclFromQualType(clang::QualType QT) {
     if (const clang::TypedefType* using_type = QT->getAs<clang::TypedefType>()) {
         auto decl = using_type->getDecl();
         return decl;
+    }
+    if (const auto* Spec = QT->getAs<clang::TemplateSpecializationType>()) {
+        const auto template_decl = Spec->getTemplateName().getAsTemplateDecl();
+        return template_decl;
+
     }
     return nullptr;
 }

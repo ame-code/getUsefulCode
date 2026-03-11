@@ -10,10 +10,33 @@
 using Self = GetUsefulCodeASTConsumer;
 using Base = clang::ASTConsumer;
 
+clang::ClassTemplateDecl *Self::findFormatterTemplate(clang::ASTContext &context) {
+    clang::TranslationUnitDecl *TU = context.getTranslationUnitDecl();
+
+    clang::NamespaceDecl *StdNS = nullptr;
+    for (auto *D : TU->lookup(&context.Idents.get("std"))) {
+        if (auto *NS = llvm::dyn_cast<clang::NamespaceDecl>(D)) {
+            StdNS = NS;
+            break;
+        }
+    }
+
+    if (!StdNS) return nullptr;
+
+    for (auto *D : StdNS->lookup(&context.Idents.get("formatter"))) {
+        if (auto *CTD = llvm::dyn_cast<clang::ClassTemplateDecl>(D)) {
+            return CTD;
+        }
+    }
+
+    return nullptr;
+}
+
+
 void Self::HandleTranslationUnit(clang::ASTContext& Context) {
     const auto TUDecl = Context.getTranslationUnitDecl();
 
-    graph_visitor.buildFormatterCacheInTranslationUnit();
+    graph_visitor.formatter_main_template = findFormatterTemplate(Context);
     graph_visitor.TraverseDecl(TUDecl);
 
     const auto DependenceGraph = std::move(graph_visitor).getGraph();
