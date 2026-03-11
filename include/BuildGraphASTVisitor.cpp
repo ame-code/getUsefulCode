@@ -159,7 +159,6 @@ bool Self::VisitCallExpr(clang::CallExpr* Call) {
     if (name != "format" && name != "print" && name != "println") return true;
 
     if (!formatter_main_template) return true;
-    log("formatter check: {}", formatter_main_template->getQualifiedNameAsString());
 
     const clang::TemplateArgumentList* args = Callee->getTemplateSpecializationArgs();
     if (!args) return true;
@@ -197,7 +196,6 @@ bool Self::VisitCallExpr(clang::CallExpr* Call) {
                     TargetDecl = Partial;
                 }
 
-                log("line:{}", __LINE__);
                 graph[getLastDecl()->getCanonicalDecl()].insert(TargetDecl->getCanonicalDecl());
             }
         }
