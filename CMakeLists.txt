@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(GetUsefulCode LANGUAGES CXX)
 
-set(CMAKE_C_COMPILER /opt/llvm-tooling/bin/clang)
-set(CMAKE_CXX_COMPILER /opt/llvm-tooling/bin/clang++)
+#set(CMAKE_C_COMPILER /opt/llvm-tooling/bin/clang)
+#set(CMAKE_CXX_COMPILER /opt/llvm-tooling/bin/clang++)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
