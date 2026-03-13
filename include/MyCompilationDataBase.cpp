@@ -17,6 +17,7 @@ std::vector<clang::tooling::CompileCommand> Self::getCompileCommands(llvm::Strin
             "-resource-dir=/opt/llvm-tooling/lib/clang/22",
             "-I/home/reed/.local/include",
             "-std=c++23",
+            "-stdlib=libc++",
             "-DREED",
             FilePath.str()
         },

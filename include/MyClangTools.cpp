@@ -1,7 +1,10 @@
 #include "MyClangTools.h"
+
+#include <format>
 #include <clang/AST/DeclTemplate.h>
 #include <clang/AST/ExprCXX.h>
 #include <clang/AST/Redeclarable.h>
+#include <clang/Basic/SourceManager.h>
 #include <llvm/Support/Casting.h>
 
 clang::ClassTemplateDecl* getPrimaryTemplateFromClass(clang::Decl* D) {
@@ -53,4 +56,10 @@ clang::Decl* getReferencedDecl(clang::Stmt* S) {
     else if (auto* CCE = clang::dyn_cast<clang::CXXConstructExpr>(S))
         return CCE->getConstructor();
     return nullptr;
+}
+
+void logDeclPos(clang::Decl* D) {
+    auto& ctx = D->getASTContext();
+    const auto& SM = ctx.getSourceManager();
+    log("file:{}, line:{}, column:{}", SM.getFilename(D->getLocation()).str(), SM.getLineNumber(D->getLocation()), SM.getColumnNumber(D->getLocation()));
 }

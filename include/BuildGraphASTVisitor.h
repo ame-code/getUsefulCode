@@ -15,8 +15,10 @@ public:
 
     bool TraverseDecl(clang::Decl*);
     bool TraverseStmt(clang::Stmt*);
-    bool shouldVisitTemplateInstantiations() const;
-    bool shouldVisitImplicitCode() const;
+
+    static bool shouldVisitTemplateInstantiations();
+
+    static bool shouldVisitImplicitCode();
     bool VisitDecl(clang::Decl*);
     bool VisitStmt(clang::Stmt*);
     bool VisitCallExpr(clang::CallExpr*);
@@ -42,10 +44,16 @@ public:
 private:
     clang::Decl* getLastDecl() const;
 
-    clang::Decl* getParentDecl(clang::Decl* D) const;
+    clang::Decl* getParentDecl(const clang::Decl* D) const;
 
     static clang::Decl* getRemoveRefPtrArrTypeDecl(clang::QualType);
     static clang::QualType getRemoveRefPtrArrType(clang::QualType QT);
+
+    clang::ClassTemplateSpecializationDecl* findSpecFromFormatter(clang::QualType QT) const;
+
+    clang::NamedDecl* getFormatterDeclFromQualType(clang::QualType QT) const;
+
+    clang::QualType getRangeElementType(clang::QualType R) const;
 
     static bool isInStdNamespace(const clang::Decl* D);
 
@@ -55,7 +63,7 @@ private:
     void handleVarDecl(clang::VarDecl* VD);
     void handleTypedefNameDecl(clang::TypedefNameDecl* TND);
     void handleTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* TATD);
-    void handleMaterializeTemporaryExpr(clang::MaterializeTemporaryExpr* MTE);
+    void handleMaterializeTemporaryExpr(const clang::MaterializeTemporaryExpr* MTE);
 
     clang::ASTContext* context;
     std::vector<clang::Decl*> decl_list;
