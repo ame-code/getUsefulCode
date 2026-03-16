@@ -8,6 +8,7 @@ project(GetUsefulCode LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
 find_package(Clang REQUIRED CONFIG)
 find_package(LLVM REQUIRED CONFIG)
@@ -23,6 +24,7 @@ target_include_directories(get_useful_code PRIVATE
 target_link_libraries(get_useful_code PRIVATE
     clang-cpp
     LLVM
+    LLVMSupport
     GetValidCodeFrontendActionFactory
     MyCompilationDataBase
 )
