@@ -28,4 +28,8 @@ clang::Decl* getPrimaryTemplate(clang::Decl* D);
 
 clang::Decl* getReferencedDecl(clang::Stmt* S);
 
-#define log(...) llvm::errs() << "[log] " << std::format(__VA_ARGS__) << '\n';
+#define log(...) llvm::errs() << "[log] " << std::format(__VA_ARGS__) << '\n'
+#define logLine() log("line:{}", __LINE__)
+#define logFileAndLine() log("file:{}, line:{}", __FILE__, __LINE__)
+
+void logDeclPos(clang::Decl* D);

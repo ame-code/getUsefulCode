@@ -1,17 +1,5 @@
-#include <format>
-
-template <class T>
-struct Foo {
-    int n;
-};
-
-template <class T>
-struct std::formatter<Foo<T>> : std::formatter<T> {
-    auto format(Foo<T> foo, std::format_context& ctx) const {
-        return std::formatter<T>::format(foo.n, ctx);
-    }
-};
+#include <bits/stdc++.h>
 
 int main() {
-    auto a = std::format("{}", Foo<int>());
+    std::cout << std::format("home:{}\n", getenv("HOME"));
 }
