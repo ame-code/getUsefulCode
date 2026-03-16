@@ -28,3 +28,6 @@ target_link_libraries(get_useful_code PRIVATE
     GetValidCodeFrontendActionFactory
     MyCompilationDataBase
 )
+
+install(TARGETS get_useful_code DESTINATION bin)
+install(FILES config.json DESTINATION etc/getUsefulCode)

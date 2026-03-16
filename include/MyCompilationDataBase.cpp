@@ -11,8 +11,10 @@ const char* home = getenv("HOME");
 
 std::vector<clang::tooling::CompileCommand> Self::getCompileCommands(llvm::StringRef FilePath) const
 {
+    assert(llvm_dir != nullptr && "llvm_dir must be non-null");
+    assert(home != nullptr && "home must be non-null");
     fs::path clang_path = fs::path(llvm_dir) / "bin" / "clang++";
-    fs::path clang_lib_path = fs::path(clang_path) / "lib" / "clang";
+    fs::path clang_lib_path = fs::path(llvm_dir) / "lib" / "clang";
     fs::path clang_resource_dir;
     for (auto it = fs::directory_iterator(clang_lib_path), e = fs::directory_iterator(); it != e; ++it)
     {
@@ -25,8 +27,8 @@ std::vector<clang::tooling::CompileCommand> Self::getCompileCommands(llvm::Strin
             FilePath.str(),
             {
                 clang_path.string(),
-                "-E",
-                "-v",
+                // "-E",
+                // "-v",
                 "-resource-dir=" + clang_resource_dir.string(),
                 "-I" + local_include_dir.string(),
                 "-std=c++23",
