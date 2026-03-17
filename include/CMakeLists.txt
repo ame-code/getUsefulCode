@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 find_package(Clang REQUIRED CONFIG)
 find_package(LLVM REQUIRED CONFIG)
+find_package(nlohmann_json REQUIRED CONFIG)
 
 # Lib MyClangTools
 add_library(MyClangTools STATIC
@@ -102,4 +103,10 @@ target_include_directories(MyCompilationDataBase PRIVATE
 target_link_libraries(MyCompilationDataBase PRIVATE
     clang-cpp
     LLVM
+)
+
+# Lib ConfigData
+add_library(ConfigData STATIC ConfigData.cpp ConfigData.hpp)
+target_link_libraries(ConfigData PRIVATE
+    nlohmann_json::nlohmann_json
 )
