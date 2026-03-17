@@ -33,5 +33,16 @@ target_link_libraries(get_useful_code PRIVATE
     ConfigData
 )
 
+target_compile_definitions(get_useful_code PRIVATE
+    INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"
+)
+
+set_target_properties(get_useful_code PROPERTIES
+        INSTALL_RPATH "/opt/llvm-tooling/lib"
+        BUILD_WITH_INSTALL_RPATH TRUE
+)
+
 install(TARGETS get_useful_code DESTINATION bin)
 install(FILES config.json DESTINATION etc/getUsefulCode)
+
+message("${LLVM_INSTALL_PREFIX}")

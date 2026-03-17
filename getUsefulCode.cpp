@@ -17,24 +17,26 @@ int main(int argc, char** argv) {
     assert(argc > 1 && "need args");
     assert(fs::exists(argv[1]) && "File not exist");
 
+    // std::cerr << argv[0] << '\n';
+
     fs::path root_path =
     #ifndef NDEBUG
     fs::path(argv[0]).parent_path().parent_path();
     #else
-    fs::path(argv[0]).parent_path().parent_path();
+    fs::path(INSTALL_PREFIX);
     #endif
-    std::cerr << root_path << '\n';
+    // std::cerr << root_path << '\n';
 
     fs::path config_path =
     #ifndef NDEBUG
     root_path / "config.json";
     #else
-    root_path / "etc" / "config.json";
+    root_path / "etc" / "getUsefulCode" / "config.json";
     #endif
 
     nlohmann::json json;
     std::ifstream ifs(config_path);
-    std::cerr << config_path << '\n';
+    // std::cerr << config_path << '\n';
     assert(ifs.is_open());
     ifs >> json;
 
