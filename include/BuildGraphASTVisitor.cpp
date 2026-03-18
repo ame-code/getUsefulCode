@@ -279,6 +279,17 @@ bool Self::VisitCallExpr(clang::CallExpr* Call) {
     return true;
 }
 
+bool Self::VisitCastExpr(clang::CastExpr* CE) {
+    auto* target_type_decl = getDeclFromQualType(CE->getType());
+
+    if (!target_type_decl) return true;
+
+    graph[getLastDecl()->getCanonicalDecl()].insert(target_type_decl->getCanonicalDecl());
+
+    return true;
+}
+
+
 clang::ClassTemplateSpecializationDecl* Self::findSpecFromFormatter(clang::QualType QT) const {
     QT = QT.getNonReferenceType().getUnqualifiedType().getCanonicalType();
     void* InsertPos = nullptr;
@@ -295,7 +306,6 @@ clang::ClassTemplateSpecializationDecl* Self::findSpecFromFormatter(clang::QualT
     }
     return Spec;
 }
-
 
 clang::NamedDecl *Self::getFormatterDeclFromQualType(const clang::QualType QT) const {
     auto* Spec = findSpecFromFormatter(QT);
@@ -402,8 +412,6 @@ void Self::handleNonTypeTemplateParmDecl(clang::NonTypeTemplateParmDecl* NTTP) {
 
 clang::Decl* Self::getDeclFromQualType(clang::QualType QT) {
     QT = getRemoveRefPtrArrType(QT);
-    if (auto* tag_decl = QT->getAsTagDecl())
-        return tag_decl;
     if (const clang::TypedefType* using_type = QT->getAs<clang::TypedefType>()) {
         auto decl = using_type->getDecl();
         return decl;
@@ -411,7 +419,9 @@ clang::Decl* Self::getDeclFromQualType(clang::QualType QT) {
     if (const auto* Spec = QT->getAs<clang::TemplateSpecializationType>()) {
         const auto template_decl = Spec->getTemplateName().getAsTemplateDecl();
         return template_decl;
-
+    }
+    if (auto* tag_decl = QT->getAsTagDecl()) {
+        return tag_decl;
     }
     return nullptr;
 }

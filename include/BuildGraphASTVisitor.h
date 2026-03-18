@@ -19,9 +19,11 @@ public:
     static bool shouldVisitTemplateInstantiations();
 
     static bool shouldVisitImplicitCode();
+
     bool VisitDecl(clang::Decl*);
     bool VisitStmt(clang::Stmt*);
     bool VisitCallExpr(clang::CallExpr*);
+    bool VisitCastExpr(clang::CastExpr*);
 
     auto& getGraph() & {
         return graph;
